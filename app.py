@@ -92,8 +92,8 @@ def highs_box(report):
 def tab_week(report):
     o, g = report["assets"]["orukan"]["summary"], report["assets"]["gold"]["summary"]
     c1, c2 = st.columns(2)
-    c1.metric("オルカン", fmt.price(o["close"], ""), fmt.pct(o["week_return"]))
-    c2.metric("ゴールド（円/g）", fmt.price(g["close"], ""), fmt.pct(g["week_return"]))
+    c1.metric("オルカン", fmt.price(o["close"], ""), "%+.1f%%" % (o["week_return"] * 100))
+    c2.metric("ゴールド（円/g）", fmt.price(g["close"], ""), "%+.1f%%" % (g["week_return"] * 100))
     fx = report["usdjpy"]
     if fx["change"] is not None:
         st.caption("ドル円 %.1f円（前週比 %+.1f円、%s）。%s" % (
