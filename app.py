@@ -234,7 +234,7 @@ def tab_run(report, store, reports):
         st.download_button("Wordをダウンロード", buf.getvalue(), file_name="週報_%s.docx" % report["report_date"], key="dl")
     except Exception as e:  # noqa: BLE001
         st.error("Wordを作れませんでした：%s" % e)
-    st.caption("PCでアプリを開くと、C:\\株価分析\\年\\月\\ に、まだ置いていない週のWordが自動で置かれます。")
+    st.caption("PCでアプリを開くと、C:\株価分析\2026年\11月\ のように、年・月のフォルダが自動で作られ、まだ置いていない週のWordが全部置かれます。")
 
 
 def tab_note(report, store):
