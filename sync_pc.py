@@ -13,7 +13,7 @@ DEFAULT_ROOT = r"C:\株価分析"
 
 def target_path(root, week):
     d = dt.date.fromisoformat(week)
-    return os.path.join(root, str(d.year), "%d月" % d.month, "週報_%s.docx" % week)
+    return os.path.join(root, "%d年" % d.year, "%d月" % d.month, "週報_%s.docx" % week)
 
 
 def sync(store, root=DEFAULT_ROOT):
