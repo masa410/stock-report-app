@@ -1,0 +1,50 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>株価レポート</title>
+<meta name="apple-mobile-web-app-title" content="株価レポート">
+<meta name="application-name" content="株価レポート">
+<meta name="theme-color" content="#0e1117">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<link rel="icon" type="image/png" href="icon-192.png">
+<style>
+  :root { --bg:#0e1117; --fg:#fafafa; --sub:#9aa3b2; --accent:#e5484d; }
+  html,body { margin:0; height:100%; background:var(--bg); color:var(--fg);
+    font-family:-apple-system,"Hiragino Sans","Noto Sans JP","Yu Gothic",sans-serif; }
+  main { min-height:100%; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:14px; padding:24px; text-align:center; }
+  img { width:96px; height:96px; border-radius:22px; }
+  h1 { font-size:1.3rem; margin:0; }
+  p { margin:0; color:var(--sub); line-height:1.6; }
+  .count { font-size:1.6rem; color:var(--fg); }
+  a.go { color:var(--accent); font-size:1.05rem; text-decoration:none; border:1px solid var(--accent); padding:.6rem 1.2rem; border-radius:10px; }
+</style>
+</head>
+<body>
+<main>
+  <img src="icon-192.png" alt="">
+  <h1>週次株価レポート</h1>
+  <p>アプリを開いています…<br>しばらく使っていないときは、起動に時間がかかります。</p>
+  <p class="count">接続中… <span id="sec">0</span> 秒</p>
+  <a class="go" id="link" href="https://stock-report-app-fy5xc8yycpddyrdodfrbvt.streamlit.app/">今すぐ直接開く →</a>
+</main>
+<script>
+  var APP_URL = "https://stock-report-app-fy5xc8yycpddyrdodfrbvt.streamlit.app/";
+  var FORCE_AFTER = 90;          // 秒。接続の確認ができなくても、この時間で必ずアプリへ移る
+  var start = Date.now(), moved = false;
+  function go() { if (moved) return; moved = true; window.location.href = APP_URL; }
+  setInterval(function () {
+    var s = Math.floor((Date.now() - start) / 1000);
+    document.getElementById("sec").textContent = s;
+    if (s >= FORCE_AFTER) go();
+  }, 1000);
+  function probe() {
+    if (moved) return;
+    fetch(APP_URL, { mode: "no-cors", cache: "no-store" }).then(go).catch(function () { setTimeout(probe, 3000); });
+  }
+  probe();
+</script>
+</body>
+</html>
