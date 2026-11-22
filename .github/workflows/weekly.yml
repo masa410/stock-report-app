@@ -1,0 +1,27 @@
+name: weekly-report
+
+on:
+  workflow_dispatch:
+  schedule:
+    # 日本時間 土曜9時 = UTC 土曜0時（数分〜10分ほど遅れることがあります）
+    - cron: "0 0 * * 6"
+
+concurrency:
+  group: report
+  cancel-in-progress: false
+
+jobs:
+  weekly:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - run: pip install -r requirements-actions.txt
+      - name: 週次レポートを作る
+        env:
+          GCP_SA_JSON: ${{ secrets.GCP_SA_JSON }}
+          SPREADSHEET_ID: ${{ secrets.SPREADSHEET_ID }}
+        run: python run_weekly.py
