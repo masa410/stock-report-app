@@ -107,17 +107,17 @@ class SheetsClient:
     def append_row(self, title: str, row: list):
         self.append_rows(title, [row])
 
-    def append_rows(self, title: str, rows: list):
+    def append_rows(self, title: str, rows: list, raw: bool = False):
         resp = requests.post(
             f"{API_BASE}/{self.spreadsheet_id}/values/{title}:append",
             headers=self._headers(),
-            params={"valueInputOption": "USER_ENTERED", "insertDataOption": "INSERT_ROWS"},
+            params={"valueInputOption": "RAW" if raw else "USER_ENTERED", "insertDataOption": "INSERT_ROWS"},
             json={"values": rows},
             timeout=30,
         )
         resp.raise_for_status()
 
-    def batch_update_rows(self, title: str, updates: list):
+    def batch_update_rows(self, title: str, updates: list, raw: bool = False):
         """updates: [(row_index, [値, ...]), ...]  row_index は get_all_values() のインデックス(0=ヘッダー行)。
         各行を A列から上書きする。1回のAPI呼び出しでまとめて書く。"""
         if not updates:
@@ -129,7 +129,7 @@ class SheetsClient:
         resp = requests.post(
             f"{API_BASE}/{self.spreadsheet_id}/values:batchUpdate",
             headers=self._headers(),
-            json={"valueInputOption": "USER_ENTERED", "data": data},
+            json={"valueInputOption": "RAW" if raw else "USER_ENTERED", "data": data},
             timeout=30,
         )
         resp.raise_for_status()

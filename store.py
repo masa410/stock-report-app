@@ -81,11 +81,12 @@ class SheetsStore:
     def append(self, sheet, rows):
         self.ensure(sheet)
         keys = [k for k, _ in COLUMNS[sheet]]
-        self.c.append_rows(sheet, [[_cell(r.get(k)) for k in keys] for r in rows])
+        # RAW：日付らしい文字（2026-11-21）をGoogleが日付の数値に変えないよう、文字のまま保存する
+        self.c.append_rows(sheet, [[_cell(r.get(k)) for k in keys] for r in rows], raw=True)
 
     def update(self, sheet, index, row):
         keys = [k for k, _ in COLUMNS[sheet]]
-        self.c.batch_update_rows(sheet, [(index + 1, [_cell(row.get(k)) for k in keys])])
+        self.c.batch_update_rows(sheet, [(index + 1, [_cell(row.get(k)) for k in keys])], raw=True)
 
 
 def _cell(v):
