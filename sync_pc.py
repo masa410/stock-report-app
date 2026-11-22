@@ -26,6 +26,9 @@ def sync(store, root=DEFAULT_ROOT):
         exists = os.path.exists(path)
         if exists:
             gen = dt.datetime.fromisoformat(generated_at)
+            saved = (report.get("claude_note") or {}).get("saved_at")        # 補足を取り込んだ時刻も、更新の判断に使う
+            if saved:
+                gen = max(gen, dt.datetime.fromisoformat(saved[:19]))
             if dt.datetime.fromtimestamp(os.path.getmtime(path)) >= gen:
                 continue
         os.makedirs(os.path.dirname(path), exist_ok=True)

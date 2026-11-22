@@ -241,16 +241,24 @@ def build_docx(report, path_or_buf):
     note = report.get("claude_note")
     if note:
         H("Claudeによる補足")
-        d.para("月に1回など、必要なときにClaudeへ依頼した補足です（取り込み：%s）。" % note["saved_at"][:16], size=9, color="595959", keep=True)
+        d.para("Claudeに依頼して、独自に調べ直してもらった補足です。上の自動分析とは別の情報源です（取り込み：%s）。" % note["saved_at"][:16], size=9, color="595959", keep=True)
         for k, v in note["sections"].items():
             d.para(k, size=10, bold=True, color="1F3864", before=3, keep=True)
             for ln in v.splitlines():
-                d.para(ln, size=9, after=1)
+                d.para(_plain(ln), size=9, after=1)
     H("ご注意")
     d.para(report["disclaimer"], size=9, color="595959")
     if report.get("problems"):
         d.para("取得できなかった項目：" + " / ".join(report["problems"])[:300], size=8, color="C00000")
     d.doc.save(path_or_buf)
+
+
+def _plain(ln):
+    """Claudeの文章に混じる記号（**太字**、行頭の - や *）を、Wordで読みやすい形にする。"""
+    t = ln.replace("**", "").strip()
+    if t[:2] in ("- ", "* "):
+        t = "・" + t[2:].lstrip()
+    return t
 
 
 def _sc(v):

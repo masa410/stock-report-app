@@ -261,6 +261,9 @@ class TestPromptAndDocx(unittest.TestCase):
         self.assertIn("今週の総括", sec)
         self.assertEqual(cands, [("新工場", "企業業績", "上昇")])
 
+    def test_docx_plain(self):
+        self.assertEqual(docx_report._plain("- **11/23（月）** 休場です。"), "・11/23（月） 休場です。")
+
     def test_docx_smoke(self):
         s = st.MemoryStore()
         m = synth_market(last_high=True)

@@ -29,6 +29,15 @@ class TestSync(unittest.TestCase):
             time.sleep(1.1)
             pipeline.run_report(s, m, dt.date(2026, 11, 21), [])
             self.assertEqual(sync_pc.sync(s, root), (0, 1, 0))
+            # 補足を取り込んだら、Wordを更新する
+            self.assertEqual(sync_pc.sync(s, root), (0, 0, 0))
+            time.sleep(1.1)
+            rows = s.read(st.config.SH_REPORT)
+            rep = [r for r in st.load_reports(s) if r[1] == "最終"][-1]
+            body = dict(rep[3], claude_note={"sections": {"今週の動きの要因": "テスト"}, "candidates": [],
+                                              "saved_at": dt.datetime.now().isoformat(timespec="seconds")})
+            st.save_report(s, rep[0], rep[1], rep[2], body)
+            self.assertEqual(sync_pc.sync(s, root), (0, 1, 0))
 
 
 if __name__ == "__main__":
