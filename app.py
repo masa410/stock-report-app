@@ -20,7 +20,7 @@ st.set_page_config(page_title="週次株価レポート", page_icon="📈", layo
 
 st.markdown("""
 <style>
-.block-container {padding-top: 1.2rem; padding-bottom: 3rem;}
+.block-container {padding-top: 4rem; padding-bottom: 3rem;}
 .hi-box {border: 2px solid #e5484d; background: rgba(229,72,77,0.10); border-radius: 10px; padding: 0.8rem 1rem; margin: 0.4rem 0 0.8rem 0;}
 .hi-box b.t {color: #ff6b70; font-size: 1.1rem;}
 .card {border: 1px solid rgba(250,250,250,0.18); border-radius: 10px; padding: 0.6rem 0.8rem; margin-bottom: 0.5rem;}
