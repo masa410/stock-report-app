@@ -50,8 +50,8 @@ def forecast_rows_from(report_week, as_of, assets_out, prices):
         base = prices[asset]
         for r in block["outlook"]["rows"]:
             target = as_of + dt.timedelta(days=r["cal"])
-            rows.append({"report_week": str(report_week), "asset": asset, "horizon": r["key"], "issued": str(as_of),
-                         "target": str(target), "judgment": r["judgment"], "p_up": r["probs"][0], "p_flat": r["probs"][1],
+            rows.append({"report_week": str(report_week), "asset": asset, "horizon": r["key"], "issued": str(as_of)[:10],
+                         "target": str(target)[:10], "judgment": r["judgment"], "p_up": r["probs"][0], "p_flat": r["probs"][1],
                          "p_down": r["probs"][2], "base_price": base, "band": r["band"], "status": "未確認",
                          "actual_return": "", "actual_label": "", "hit": ""})
     return rows

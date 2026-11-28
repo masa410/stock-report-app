@@ -3,8 +3,8 @@ name: weekly-report
 on:
   workflow_dispatch:
   schedule:
-    # 日本時間 土曜9時 = UTC 土曜0時（数分〜10分ほど遅れることがあります）
-    - cron: "0 0 * * 6"
+    # 日本時間 土曜9時23分 = UTC 土曜0時23分。ちょうどの時刻（0分）は混み合って何時間も遅れた実績があるため、ずらしてある。それでも遅れることはある
+    - cron: "23 0 * * 6"
 
 concurrency:
   group: report

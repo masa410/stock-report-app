@@ -86,5 +86,10 @@ def run_report(store, market, today, fresh_headlines=(), problems=None):
     prow = rpt.price_row(market, as_of)
     if prow["date"] not in have:
         store.append(config.SH_PRICE, [prow])
+    if mode == "最終" and not report.get("claude_note"):
+        # 同じ週をやり直しても、取り込み済みのClaudeの補足は消さずに引き継ぐ
+        prev = [r for w, m, _g, r in st.load_reports(store) if w == str(week) and m == "最終" and r.get("claude_note")]
+        if prev:
+            report["claude_note"] = prev[-1]["claude_note"]
     st.save_report(store, str(week), mode, report["generated_at"], report)
     return report

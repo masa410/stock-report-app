@@ -19,12 +19,12 @@ def price(x, asset):
 
 
 def md(iso):
-    d = dt.date.fromisoformat(iso)
+    d = dt.date.fromisoformat(str(iso)[:10])        # 「2026-11-20 00:00:00」のように時刻つきで保存された日付も読める
     return "%d月%d日" % (d.month, d.day)
 
 
 def jp_date(iso):
-    d = dt.date.fromisoformat(iso)
+    d = dt.date.fromisoformat(str(iso)[:10])
     return "%d年%d月%d日（%s）" % (d.year, d.month, d.day, "月火水木金土日"[d.weekday()])
 
 

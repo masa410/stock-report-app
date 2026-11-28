@@ -53,6 +53,21 @@ class TestSync(unittest.TestCase):
             self.assertEqual(sync_pc.sync(s, root), (1, 0, 0))
             self.assertTrue(os.path.exists(os.path.join(root, "2027年", "1月", "週報_2027-01-02.docx")))
 
+    def test_second_week_docx_and_note_carry_over(self):
+        """2週目（前の予想の答え合わせが入る週）でもWordが作れる。やり直しても補足は消えない。"""
+        s = st.MemoryStore()
+        m = synth_market()
+        pipeline.run_report(s, m, dt.date(2026, 11, 14), [])
+        r2 = pipeline.run_report(s, m, dt.date(2026, 11, 21), [])
+        rep = [r for r in st.load_reports(s) if r[0] == "2026-11-21"][-1]
+        st.save_report(s, rep[0], rep[1], rep[2], dict(rep[3], claude_note={"sections": {"今週の動きの要因": "テスト"}, "candidates": [], "saved_at": "2026-11-21T10:00:00"}))
+        r3 = pipeline.run_report(s, m, dt.date(2026, 11, 21), [])             # やり直し
+        self.assertEqual(r3["claude_note"]["sections"], {"今週の動きの要因": "テスト"})
+        with tempfile.TemporaryDirectory() as root:
+            self.assertEqual(sync_pc.sync(s, root)[2], 0)
+            self.assertTrue(os.path.exists(os.path.join(root, "2026年", "11月", "週報_2026-11-21.docx")))
+            self.assertTrue(os.path.exists(os.path.join(root, "2026年", "11月", "週報_2026-11-14.docx")))
+
 
 if __name__ == "__main__":
     unittest.main()
