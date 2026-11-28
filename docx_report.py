@@ -1,4 +1,5 @@
 """週次レポートのWord（レポートdict → docx）。PCとクラウドのどちらでも動く。"""
+import datetime as dt
 import io
 import logging
 import os
@@ -180,6 +181,18 @@ def build_docx(report, path_or_buf):
     d.doc.paragraphs[-1].alignment = WD_ALIGN_PARAGRAPH.CENTER
     d.para("図：直近1年の推移（1年前を100とした指数）", size=8, color="595959", align=WD_ALIGN_PARAGRAPH.CENTER)
 
+    # 今週の日々の動き
+    dm = report.get("daily")
+    if dm and dm.get("dates"):
+        H("今週の日々の動き")
+        d.para("先週金曜の終値を基準にした、その日までの騰落率です。", size=9, color="595959", keep=True)
+        rows = [["日", "オルカン", "ゴールド"]]
+        for dd, vo, vg in zip(dm["dates"], dm["orukan"], dm["gold"]):
+            x = dt.date.fromisoformat(dd)
+            rows.append(["%d/%d（%s）" % (x.month, x.day, "月火水木金土日"[x.weekday()]),
+                         ("%+.2f%%" % vo).replace("-", "−"), ("%+.2f%%" % vg).replace("-", "−")])
+        d.table(rows, [5.4, 6.0, 6.0], right_from=1)
+
     # ニュース
     n = report.get("news")
     if n:
@@ -241,7 +254,9 @@ def build_docx(report, path_or_buf):
     note = report.get("claude_note")
     if note:
         H("Claudeによる補足")
-        d.para("Claudeに依頼して、独自に調べ直してもらった補足です。上の自動分析とは別の情報源です（取り込み：%s）。" % note["saved_at"][:16], size=9, color="595959", keep=True)
+        late = bool(report.get("note_due")) and str(note["saved_at"])[:19] > str(report["note_due"])[:19]
+        d.para("Claudeに依頼して、独自に調べ直してもらった補足です。上の自動分析とは別の情報源です（取り込み：%s%s）。" % (
+            note["saved_at"][:16], "　※期限後に取り込み" if late else ""), size=9, color="595959", keep=True)
         for k, v in note["sections"].items():
             d.para(k, size=10, bold=True, color="1F3864", before=3, keep=True)
             for ln in v.splitlines():

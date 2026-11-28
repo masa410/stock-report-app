@@ -204,8 +204,11 @@ class TestStoreAndPipeline(unittest.TestCase):
         s = st.MemoryStore()
         rep = pipeline.run_report(s, synth_market(), dt.date(2026, 11, 18), [])         # 水曜
         self.assertEqual(rep["mode"], "暫定")
-        self.assertEqual(rep["report_date"], "2026-11-18")
+        self.assertEqual(rep["report_date"], "2026-11-21")            # 週の区切り（土曜）の日付
+        self.assertEqual(rep["weekday"], "水")
         self.assertNotIn("outlook", rep["assets"]["orukan"])
+        self.assertEqual(len(st.load_provs(s)), 1)                     # 暫定版は、専用のシートに、日ごとに残る
+        self.assertEqual(st.load_reports(s), [])                       # 週次レポート（最終）には入らない
         self.assertIsNone(rep["answers"])
         self.assertEqual(len(s.read(config.SH_FORECAST)), 0)
 
@@ -232,13 +235,13 @@ class TestStoreAndPipeline(unittest.TestCase):
         self.assertEqual(reps[0][3]["x"], 2)
         self.assertEqual(sum(1 for r in s.read(config.SH_REPORT) if r["mode"] == "履歴"), 1)
 
-    def test_final_sorted_after_provisional_of_same_week(self):
+    def test_provisional_does_not_replace_final(self):
         s = st.MemoryStore()
         m = synth_market()
         pipeline.run_report(s, m, dt.date(2026, 11, 21), [])        # 最終（先に作る）
         pipeline.run_report(s, m, dt.date(2026, 11, 18), [])        # 暫定（あとで作る）
         reps = st.load_reports(s)
-        self.assertEqual([r[1] for r in reps], ["暫定", "最終"])
+        self.assertEqual([r[1] for r in reps], ["最終"])            # 暫定版は最終版を置き換えない
 
     def test_week_key_and_mode(self):
         self.assertEqual(rpt.week_key_and_mode(dt.date(2026, 11, 21)), (dt.date(2026, 11, 21), "最終"))   # 土

@@ -104,7 +104,9 @@ def cluster(items, threshold=None):
             if n >= need:
                 label, weight = lab, w
                 break
+        seen = [x.get("fetched") for x in c["items"] if x.get("fetched")]
         out.append({"title": c["title"], "sources": sources, "n_sources": n, "trust": label, "weight": weight,
+                    "first_seen": min(seen) if seen else "", "last_seen": max(seen) if seen else "",
                     "links": [x["link"] for x in c["items"][:3]],
                     "titles": [x["title"] for x in c["items"][:5]]})
     return sorted(out, key=lambda x: -x["n_sources"])

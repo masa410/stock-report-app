@@ -1,4 +1,5 @@
 """Claudeに渡す文章（毎回同じ型）と、返ってきた補足の取り込み。"""
+import datetime as dt
 import re
 
 import config
@@ -9,7 +10,8 @@ FORMAT = """【調べること（これが依頼の中心です）】
 1. この1週間（データ基準日までの週）に、オルカン（全世界株式）とゴールド（円建て）が動いた本当の理由。株価・為替・金利・原油・金の値動きと、主要な報道・発表を、自分で調べて裏づける。
 2. 上の「ニュース見出し」が、本当にその日に報じられたことか、他の信頼できる媒体でも確認できるか。見出しごとに「確認できた／一部確認／確認できず」で判定する。
 3. 来週の予定（米国・日本の経済指標、中央銀行の会合や要人発言、主要企業の決算、地政学上の節目）。日付つきで調べる。
-4. 1か月後・半年後・3年後（ゴールドは5年後も）の見方。材料と根拠を挙げ、上の「ルール判定」に同意できるか、異論があるかを述べる。
+4. この1週間の、日ごとの動きとニュースの流れを踏まえた、経緯の説明（何がきっかけで、どう動いたか）。
+5. 1か月後・半年後・3年後（ゴールドは5年後も）の見方。材料と根拠を挙げ、上の「ルール判定」に同意できるか、異論があるかを述べる。
 
 【守ること】
 - 検索やWebの閲覧ができる場合は、必ず使って調べる。使えない場合は、その旨を最初の1行に書き、知っている範囲に限って答える。
@@ -47,11 +49,26 @@ def build_prompt(report):
             b = report["assets"][asset]
             for r in b["outlook"]["rows"]:
                 lines.append("  - %s %s: %s" % (b["label"], r["label"], fmt.probs_text(r["probs"])))
+    dm = report.get("daily")
+    if dm and dm.get("dates"):
+        lines.append("■ 今週の日々の動き（先週金曜の終値を基準にした、その日までの騰落率）:")
+        for dd, vo, vg in zip(dm["dates"], dm["orukan"], dm["gold"]):
+            lines.append("  - %s（%s）: オルカン %s／ゴールド %s" % (fmt.md(dd), "月火水木金土日"[dt.date.fromisoformat(dd).weekday()],
+                                                           ("%+.2f%%" % vo).replace("-", "−"), ("%+.2f%%" % vg).replace("-", "−")))
     n = report.get("news")
     if n:
         lines.append("■ 今週のニュース見出し（配信元数・分類つき）:")
         for c in n["clusters"][:12]:
             lines.append("  - [%d配信元・%s] %s" % (c["n_sources"], "・".join(c["categories"][:2]) or "未分類", c["title"]))
+        days = {}
+        for c in n["clusters"]:
+            if c.get("first_seen") and (c["n_sources"] >= 2 or c["categories"]):
+                days.setdefault(c["first_seen"], []).append(c)
+        if days:
+            lines.append("■ 日ごとのニュースの流れ（その日に初めて出た主な話題）:")
+            for day in sorted(days):
+                top = sorted(days[day], key=lambda c: -c["n_sources"])[:3]
+                lines.append("  - %s: %s" % (fmt.md(day), " ／ ".join(c["title"][:40] for c in top)))
     lines += ["", FORMAT]
     return "\n".join(lines)
 

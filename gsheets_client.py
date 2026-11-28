@@ -104,6 +104,17 @@ class SheetsClient:
         resp.raise_for_status()
         return resp.json().get("values", [])
 
+    def get_header(self, title: str) -> list:
+        """見出しの行（1行目）だけを読む（大きなシートでも軽い）。"""
+        resp = requests.get(
+            f"{API_BASE}/{self.spreadsheet_id}/values/{title}!1:1",
+            headers=self._headers(),
+            timeout=15,
+        )
+        resp.raise_for_status()
+        v = resp.json().get("values", [])
+        return v[0] if v else []
+
     def append_row(self, title: str, row: list):
         self.append_rows(title, [row])
 

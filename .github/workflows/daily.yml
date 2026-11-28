@@ -1,0 +1,31 @@
+name: daily-update
+
+on:
+  workflow_dispatch:
+  schedule:
+    # 日本時間 朝7時13分 = UTC 22時13分（前日）、夕18時13分 = UTC 9時13分。
+    # ちょうどの時刻（0分）は混み合って大きく遅れるため、ずらしてある。それでも遅れることはある
+    - cron: "13 22 * * *"
+    - cron: "13 9 * * *"
+
+concurrency:
+  group: report
+  cancel-in-progress: false
+
+jobs:
+  daily:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - run: pip install -r requirements-actions.txt
+      - name: 価格とニュースを集めて、暫定版を更新する（土曜9:23以降・日曜は見出しだけ）
+        env:
+          GCP_SA_JSON: ${{ secrets.GCP_SA_JSON }}
+          SPREADSHEET_ID: ${{ secrets.SPREADSHEET_ID }}
+          NOTIFY_SMTP_USER: ${{ secrets.NOTIFY_SMTP_USER }}
+          NOTIFY_SMTP_PASSWORD: ${{ secrets.NOTIFY_SMTP_PASSWORD }}
+        run: python run_daily.py

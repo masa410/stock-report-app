@@ -1,10 +1,12 @@
 """レポート（辞書型）の組み立てと、見通しの記録・答え合わせ。"""
 import datetime as dt
+import os
 
 import pandas as pd
 
 import analysis
 import config
+import fmt
 import news as newsmod
 import outlook
 
@@ -12,6 +14,9 @@ JST = dt.timezone(dt.timedelta(hours=9))
 
 
 def now_jst():
+    fake = os.environ.get("STOCK_APP_NOW")          # 試験・画面確認用：時刻を固定する（本番では設定しない）
+    if fake:
+        return dt.datetime.fromisoformat(fake)
     return dt.datetime.now(JST).replace(tzinfo=None, microsecond=0)
 
 
@@ -25,6 +30,67 @@ def week_key_and_mode(today):
     return today + dt.timedelta(days=5 - wd), "暫定"
 
 
+def coming_saturday(now):
+    """その時刻の「週」を表す土曜の日付。土曜は、最終版の時刻（9:23）より前ならその日、後なら翌週の土曜。"""
+    d = now.date()
+    wd = d.weekday()
+    if wd == 5:
+        return d if (now.hour, now.minute) < config.FINAL_TIME else d + dt.timedelta(days=7)
+    if wd == 6:
+        return d + dt.timedelta(days=6)
+    return d + dt.timedelta(days=5 - wd)
+
+
+def run_kind(now):
+    """毎日の更新で何を作るか。月〜金と、土曜9:23より前＝暫定版。それ以外（土曜9:23以降・日曜）＝見出しを集めるだけ。"""
+    wd = now.weekday()
+    if wd <= 4 or (wd == 5 and (now.hour, now.minute) < config.FINAL_TIME):
+        return "暫定"
+    return "取得のみ"
+
+
+def run_label(now):
+    return "朝" if now.hour < 12 else "夕"
+
+
+def note_due_for(week):
+    """補足の期限（最終版の翌日の24:00）。例：土曜 11/28 の週 → 11/29 23:59:59。"""
+    d = dt.date.fromisoformat(str(week)[:10]) + dt.timedelta(days=config.NOTE_DUE_DAYS)
+    return "%s 23:59:59" % d
+
+
+def _streak_text(series):
+    v = [0.0] + list(series)
+    ch = [v[i] - v[i - 1] for i in range(1, len(v))]
+    if not ch or ch[-1] == 0:
+        return ""
+    up = ch[-1] > 0
+    n = 0
+    for c in reversed(ch):
+        if c != 0 and (c > 0) == up:
+            n += 1
+        else:
+            break
+    return ("%d日続伸" if up else "%d日続落") % n if n >= 2 else ""
+
+
+def one_liner(assets, daily, usd):
+    """今日のひとこと（暫定版の一番上）。"""
+    o, g = assets["orukan"]["summary"], assets["gold"]["summary"]
+    t = "オルカンは今週ここまで %s" % fmt.pct(o["week_return"])
+    s = _streak_text(daily["orukan"]) if daily else ""
+    t += ("、" + s if s else "") + "。"
+    h = o["highs"]
+    t += "最高値を更新しました。" if h["ath_update"] else "最高値まで、あと %s。" % fmt.pct(h["ath_remaining_pct"], signed=False)
+    t += "\n"
+    u = "ゴールドは今週ここまで %s" % fmt.pct(g["week_return"])
+    s2 = _streak_text(daily["gold"]) if daily else ""
+    t += u + ("、" + s2 if s2 else "") + "。"
+    if usd and usd.get("change") is not None:
+        t += "ドル円は %.1f円（先週末比 %s円）。" % (usd["last"], ("%+.1f" % usd["change"]).replace("-", "−"))
+    return t
+
+
 def _weekday_ja(d):
     return "月火水木金土日"[d.weekday()]
 
@@ -34,7 +100,8 @@ def build_news_section(judged, total, unclassified):
     shown = []
     for c in items[:15]:
         shown.append({"title": c["title"], "n_sources": c["n_sources"], "trust": c["trust"], "sources": c["sources"][:6],
-                      "categories": c["categories"], "scores": c["scores"], "link": (c["links"] or [""])[0]})
+                      "categories": c["categories"], "scores": c["scores"], "link": (c["links"] or [""])[0],
+                      "first_seen": c.get("first_seen", ""), "last_seen": c.get("last_seen", "")})
     un = []
     for c in unclassified[:12]:
         un.append({"title": c["title"], "n_sources": c["n_sources"], "trust": c["trust"],
@@ -120,15 +187,29 @@ def build_report(market, news_pack, report_date, mode, backtests=None, answers=N
         for asset in assets:
             ns = news_sec["scores"][asset] if news_sec else 0.0
             assets[asset]["outlook"] = outlook.build_outlook(asset, market[asset].dropna(), market, ns)
+    daily = analysis.daily_moves(market["orukan"].dropna(), market["gold"].dropna(), rep_ts)
+    usd = analysis.usdjpy_summary(market["usdjpy"], rep_ts)
+    position = one = None
+    if mode != "最終":
+        position = {}
+        for asset in assets:
+            ns = news_sec["scores"][asset] if news_sec else 0.0
+            position[asset] = outlook.build_outlook(asset, market[asset].dropna(), market, ns)["position"]
+        one = one_liner(assets, daily, usd)
     report = {
-        "version": 1,
+        "version": 2,
+        "week": str(rep_ts.date()),
+        "daily": daily,
+        "position": position,
+        "one_liner": one,
+        "note_due": note_due_for(rep_ts.date()) if mode == "最終" else None,
         "mode": mode,
         "report_date": str(rep_ts.date()),
         "weekday": _weekday_ja(rep_ts.date()),
         "as_of": str(as_of.date()),
         "generated_at": str(now_jst()),
         "assets": assets,
-        "usdjpy": analysis.usdjpy_summary(market["usdjpy"], rep_ts),
+        "usdjpy": usd,
         "chart": analysis.weekly_chart(market["orukan"], market["gold"], rep_ts),
         "news": news_sec,
         "answers": answers if mode == "最終" else None,

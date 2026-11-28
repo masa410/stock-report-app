@@ -125,3 +125,21 @@ def weekly_chart(orukan, gold, report_date, weeks=52):
         out["orukan"].append(round(vo / base_o * 100, 2))
         out["gold"].append(round(vg / base_g * 100, 2))
     return out
+
+
+def daily_moves(orukan, gold, report_date):
+    """今週の日々の動き：先週金曜の終値を基準にした、日ごとの騰落（％）。"""
+    prev_o, end_o = week_bounds(orukan, report_date)
+    prev_g, end_g = week_bounds(gold, report_date)
+    if prev_o is None or prev_g is None:
+        return {"dates": [], "orukan": [], "gold": []}
+    wo = window_stats(orukan, prev_o, end_o)
+    wg = window_stats(gold, prev_g, end_g)
+    dates = sorted(set(wo.index) | set(wg.index))
+    base_o = float(orukan[orukan.index == prev_o].iloc[0])
+    base_g = float(gold[gold.index == prev_g].iloc[0])
+    out = {"dates": [str(d.date()) for d in dates], "orukan": [], "gold": []}
+    for d in dates:
+        out["orukan"].append(round((asof(orukan, d)[1] / base_o - 1.0) * 100, 2))
+        out["gold"].append(round((asof(gold, d)[1] / base_g - 1.0) * 100, 2))
+    return out
